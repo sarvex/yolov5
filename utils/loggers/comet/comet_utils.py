@@ -4,7 +4,7 @@ from urllib.parse import urlparse
 
 try:
     import comet_ml
-except (ModuleNotFoundError, ImportError):
+except ImportError:
     comet_ml = None
 
 import yaml

@@ -164,30 +164,31 @@ class CometLogger:
 
     def _get_experiment(self, mode, experiment_id=None):
         if mode == 'offline':
+            return (
+                comet_ml.ExistingOfflineExperiment(
+                    previous_experiment=experiment_id,
+                    **self.default_experiment_kwargs,
+                )
+                if experiment_id is not None
+                else comet_ml.OfflineExperiment(
+                    **self.default_experiment_kwargs,
+                )
+            )
+        try:
             if experiment_id is not None:
-                return comet_ml.ExistingOfflineExperiment(
+                return comet_ml.ExistingExperiment(
                     previous_experiment=experiment_id,
                     **self.default_experiment_kwargs,
                 )
 
-            return comet_ml.OfflineExperiment(**self.default_experiment_kwargs, )
+            return comet_ml.Experiment(**self.default_experiment_kwargs)
 
-        else:
-            try:
-                if experiment_id is not None:
-                    return comet_ml.ExistingExperiment(
-                        previous_experiment=experiment_id,
-                        **self.default_experiment_kwargs,
-                    )
-
-                return comet_ml.Experiment(**self.default_experiment_kwargs)
-
-            except ValueError:
-                logger.warning('COMET WARNING: '
-                               'Comet credentials have not been set. '
-                               'Comet will default to offline logging. '
-                               'Please set your credentials to enable online logging.')
-                return self._get_experiment('offline', experiment_id)
+        except ValueError:
+            logger.warning('COMET WARNING: '
+                           'Comet credentials have not been set. '
+                           'Comet will default to offline logging. '
+                           'Please set your credentials to enable online logging.')
+            return self._get_experiment('offline', experiment_id)
 
         return
 
@@ -235,10 +236,7 @@ class CometLogger:
         path = data_config.get('path')
         if path and path.startswith(COMET_PREFIX):
             path = data_config['path'].replace(COMET_PREFIX, '')
-            data_dict = self.download_dataset_artifact(path)
-
-            return data_dict
-
+            return self.download_dataset_artifact(path)
         self.log_asset(self.opt.data, metadata={'type': 'data-config-file'})
 
         return check_dataset(data_file)
@@ -262,26 +260,22 @@ class CometLogger:
             self.log_image(native_scale_image, name=image_name)
             self.logged_image_names.append(image_name)
 
-        metadata = []
-        for cls, *xyxy in filtered_labels.tolist():
-            metadata.append({
+        metadata = [
+            {
                 'label': f'{self.class_names[int(cls)]}-gt',
                 'score': 100,
-                'box': {
-                    'x': xyxy[0],
-                    'y': xyxy[1],
-                    'x2': xyxy[2],
-                    'y2': xyxy[3]}, })
-        for *xyxy, conf, cls in filtered_detections.tolist():
-            metadata.append({
+                'box': {'x': xyxy[0], 'y': xyxy[1], 'x2': xyxy[2], 'y2': xyxy[3]},
+            }
+            for cls, *xyxy in filtered_labels.tolist()
+        ]
+        metadata.extend(
+            {
                 'label': f'{self.class_names[int(cls)]}',
                 'score': conf * 100,
-                'box': {
-                    'x': xyxy[0],
-                    'y': xyxy[1],
-                    'x2': xyxy[2],
-                    'y2': xyxy[3]}, })
-
+                'box': {'x': xyxy[0], 'y': xyxy[1], 'x2': xyxy[2], 'y2': xyxy[3]},
+            }
+            for *xyxy, conf, cls in filtered_detections.tolist()
+        )
         self.metadata_dict[image_name] = metadata
         self.logged_images_count += 1
 
