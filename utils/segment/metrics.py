@@ -47,20 +47,22 @@ def ap_per_class_box_and_mask(
                                  names=names,
                                  prefix='Mask')[2:]
 
-    results = {
+    return {
         'boxes': {
             'p': results_boxes[0],
             'r': results_boxes[1],
             'ap': results_boxes[3],
             'f1': results_boxes[2],
-            'ap_class': results_boxes[4]},
+            'ap_class': results_boxes[4],
+        },
         'masks': {
             'p': results_masks[0],
             'r': results_masks[1],
             'ap': results_masks[3],
             'f1': results_masks[2],
-            'ap_class': results_masks[4]}}
-    return results
+            'ap_class': results_masks[4],
+        },
+    }
 
 
 class Metric:

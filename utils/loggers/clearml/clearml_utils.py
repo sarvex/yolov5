@@ -28,7 +28,7 @@ def construct_dataset(clearml_info_string):
     if len(yaml_filenames) > 1:
         raise ValueError('More than one yaml file was found in the dataset root, cannot determine which one contains '
                          'the dataset definition this way.')
-    elif len(yaml_filenames) == 0:
+    elif not yaml_filenames:
         raise ValueError('No yaml definition found in dataset root path, check that there is a correct yaml file '
                          'inside the dataset root path.')
     with open(yaml_filenames[0]) as f:
